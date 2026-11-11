@@ -16,7 +16,7 @@ public class StopController {
 
     private final StopService stopService;
 
-    @GetMapping("/api/stops/search/{searchPhrase}")
+    @GetMapping("/api/stop/search/{searchPhrase}")
     public ResponseEntity<List<StopDto>> searchStop(@PathVariable String searchPhrase) {
 
         return null;
