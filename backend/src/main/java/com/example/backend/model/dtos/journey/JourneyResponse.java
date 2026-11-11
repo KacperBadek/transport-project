@@ -1,4 +1,4 @@
-package com.example.backend.model.dtos;
+package com.example.backend.model.dtos.journey;
 
 import lombok.Builder;
 
