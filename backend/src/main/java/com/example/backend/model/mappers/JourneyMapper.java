@@ -10,7 +10,8 @@ import java.util.List;
 
 public class JourneyMapper {
 
-    private JourneyMapper() {}
+    private JourneyMapper() {
+    }
 
     public static List<JourneyOptionDto> toDtos(@NotNull JsonNode response) {
         List<JourneyOptionDto> journeys = new ArrayList<>();
@@ -28,24 +29,26 @@ public class JourneyMapper {
             for (JsonNode leg : node.path("legs")) {
                 JsonNode route = leg.path("route");
 
-                legs.add(new JourneyLegDto(
-                        leg.path("mode").asText(),
-                        leg.path("start").path("scheduledTime").asText(null),
-                        leg.path("end").path("scheduledTime").asText(null),
-                        leg.path("from").path("name").asText(null),
-                        leg.path("to").path("name").asText(null),
-                        route.path("shortName").asText(null),
-                        route.path("longName").asText(null)
-                ));
+                legs.add(JourneyLegDto.builder()
+                        .mode(leg.path("mode").asText())
+                        .departureTime(leg.path("start").path("scheduledTime").asText(null))
+                        .arrivalTime(leg.path("end").path("scheduledTime").asText(null))
+                        .from(leg.path("from").path("name").asText(null))
+                        .to(leg.path("to").path("name").asText(null))
+                        .routeShortName(route.path("shortName").asText(null))
+                        .routeLongName(route.path("longName").asText(null))
+                        .build()
+                );
             }
 
-            journeys.add(new JourneyOptionDto(
-                    node.path("start").asText(),
-                    node.path("end").asText(),
-                    node.path("duration").asInt(),
-                    node.path("numberOfTransfers").asInt(),
-                    legs
-            ));
+            journeys.add(JourneyOptionDto.builder()
+                    .departureTime(node.path("start").asText())
+                    .arrivalTime(node.path("end").asText())
+                    .durationSeconds(node.path("duration").asInt())
+                    .numberOfTransfers(node.path("numberOfTransfers").asInt())
+                    .legs(legs)
+                    .build()
+            );
         }
 
         return journeys;

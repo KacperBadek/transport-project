@@ -13,12 +13,12 @@ public class StopMapper {
     }
 
     public static StopDto toDto(@NotNull JsonNode stop) {
-        return new StopDto(
-                stop.path("gtfsId").asText(),
-                stop.path("name").asText(),
-                stop.path("lat").asDouble(),
-                stop.path("lon").asDouble()
-        );
+        return StopDto.builder()
+                .id(stop.path("gtfsId").asText())
+                .name(stop.path("name").asText())
+                .latitude(stop.path("lat").asDouble())
+                .longitude(stop.path("lon").asDouble())
+                .build();
     }
 
     public static List<StopDto> toDtos(@NotNull JsonNode response) {
