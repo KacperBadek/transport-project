@@ -1,0 +1,57 @@
+services:
+  otp-build:
+    image: opentripplanner/opentripplanner:2.11.0_2026-11-10T10-16
+    container_name: transitflow-otp-build
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx4G"
+    volumes:
+      - ../../otp/data/gdansk:/var/opentripplanner
+    command: [ "--build", "--save" ]
+    restart: "no"
+
+  otp:
+    image: opentripplanner/opentripplanner:2.11.0_2026-11-10T10-16
+    container_name: transitflow-otp
+    ports:
+      - "8081:8080"
+    volumes:
+      - ../../otp/data/gdansk:/var/opentripplanner
+    command: [ "--load", "--serve" ]
+    depends_on:
+      otp-build:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.40.16
+    container_name: transitflow-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  ollama-init:
+    image: ollama/ollama:0.40.16
+    container_name: transitflow-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        echo "Downloading AI model"
+        ollama pull hadad/LFM2.5-1.2B:Q4_K_M
+        echo "AI model is ready"
+    restart: "no"
+
+volumes:
+  ollama_data:
