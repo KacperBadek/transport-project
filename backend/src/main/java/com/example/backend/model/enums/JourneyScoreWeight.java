@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum JourneyScoreWeight {
-    TIME(35),
-    TRANSFERS(30),
-    WAITING(20),
+    TRAVEL_TIME(35),
+    NUMBER_OF_TRANSFERS(30),
+    TOTAL_TRANSFER_TIME(20),
     COMFORT(15);
 
     private final int weight;

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,14 +18,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JourneyScoringService {
 
-    public List<JourneyScoredOptionDto> scoreJourneys(
-            List<JourneyOptionDto> journeys
-    ) {
-        if (journeys == null || journeys.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Journey list cannot be empty."
-            );
-        }
+    public List<JourneyScoredOptionDto> scoreJourneys(List<JourneyOptionDto> journeys) {
+        validateJourneys(journeys);
 
         int fastestDuration = journeys.stream()
                 .mapToInt(JourneyOptionDto::durationSeconds)
@@ -34,13 +29,9 @@ public class JourneyScoringService {
         List<JourneyScoredOptionDto> results = new ArrayList<>();
 
         for (int i = 0; i < journeys.size(); i++) {
-            JourneyOptionDto journey = journeys.get(i);
+            var journey = journeys.get(i);
 
-            int waitingMinutes = calculateWaitingMinutes(journey);
-            int shortestTransfer = calculateShortestTransfer(journey);
-            int walkingMinutes = calculateWalkingMinutes(journey);
-
-            int timeScore = calculateTimeScore(
+            int travelTimeScore = calculateTimeScore(
                     journey.durationSeconds(),
                     fastestDuration
             );
@@ -49,66 +40,66 @@ public class JourneyScoringService {
                     journey.numberOfTransfers()
             );
 
-            int waitingScore = calculateWaitingScore(
+            long totalTransferSeconds = calculateTotalTransferSeconds(journey);
+            long shortestTransferSeconds = calculateShortestTransferSeconds(journey);
+
+            int transferTimeScore = calculateTransferTimeScore(
                     journey.numberOfTransfers(),
-                    waitingMinutes,
-                    shortestTransfer
+                    totalTransferSeconds,
+                    shortestTransferSeconds
             );
 
-            int walkingScore = calculateWalkingScore(walkingMinutes);
+            long walkingSeconds = calculateWalkingSeconds(journey);
+            int walkingScore = calculateWalkingScore(walkingSeconds);
 
-            double overallScore =
-                    timeScore * JourneyScoreWeight.TIME.getWeight() / 100.0
-                            + transfersScore * JourneyScoreWeight.TRANSFERS.getWeight() / 100.0
-                            + waitingScore * JourneyScoreWeight.WAITING.getWeight() / 100.0
-                            + walkingScore * JourneyScoreWeight.COMFORT.getWeight() / 100.0;
+            double overallScore = calculateOverallScore(
+                    travelTimeScore,
+                    transfersScore,
+                    transferTimeScore,
+                    walkingScore
+            );
 
             List<JourneyCriterionScoreDto> criteria = List.of(
-                    new JourneyCriterionScoreDto(
-                            "TRAVEL_TIME",
-                            journey.durationSeconds() / 60 + " min",
-                            timeScore,
-                            JourneyScoreWeight.TIME.getWeight()
-                    ),
-                    new JourneyCriterionScoreDto(
-                            "TRANSFERS",
-                            String.valueOf(journey.numberOfTransfers()),
-                            transfersScore,
-                            JourneyScoreWeight.TRANSFERS.getWeight()
-                    ),
-                    new JourneyCriterionScoreDto(
-                            "TRANSFER_WAITING_TIME",
-                            waitingMinutes + " min",
-                            waitingScore,
-                            JourneyScoreWeight.WAITING.getWeight()
-                    ),
-                    new JourneyCriterionScoreDto(
-                            "WALKING_COMFORT",
-                            walkingMinutes + " min",
-                            walkingScore,
-                            JourneyScoreWeight.COMFORT.getWeight()
-                    )
+                    JourneyCriterionScoreDto.builder()
+                            .criterion("TOTAL_TRAVEL_TIME")
+                            .measuredValue(formatDuration(journey.durationSeconds()))
+                            .score(travelTimeScore)
+                            .weight(JourneyScoreWeight.TRAVEL_TIME.getWeight())
+                            .build(),
+
+                    JourneyCriterionScoreDto.builder()
+                            .criterion("NUMBER_OF_TRANSFERS")
+                            .measuredValue(String.valueOf(journey.numberOfTransfers()))
+                            .score(transfersScore)
+                            .weight(JourneyScoreWeight.NUMBER_OF_TRANSFERS.getWeight())
+                            .build(),
+
+                    JourneyCriterionScoreDto.builder()
+                            .criterion("TOTAL_TRANSFER_TIME")
+                            .measuredValue(formatDuration(totalTransferSeconds))
+                            .score(transferTimeScore)
+                            .weight(JourneyScoreWeight.TOTAL_TRANSFER_TIME.getWeight())
+                            .build(),
+
+                    JourneyCriterionScoreDto.builder()
+                            .criterion("TIME_SPENT_WALKING")
+                            .measuredValue(formatDuration(walkingSeconds))
+                            .score(walkingScore)
+                            .weight(JourneyScoreWeight.COMFORT.getWeight())
+                            .build()
             );
 
-            results.add(new JourneyScoredOptionDto(
-                    i,
-                    journey,
-                    Math.round(overallScore * 100.0) / 100.0,
-                    criteria
-            ));
+            results.add(JourneyScoredOptionDto.builder()
+                    .journeyIndex(i + 1)
+                    .overallScore(overallScore)
+                    .criteria(criteria)
+                    .build());
         }
 
         return results;
     }
 
-    private int calculateTimeScore(
-            int durationSeconds,
-            int fastestDuration
-    ) {
-        if (fastestDuration <= 0) {
-            return 1;
-        }
-
+    private int calculateTimeScore(int durationSeconds, int fastestDuration) {
         double ratio = (double) durationSeconds / fastestDuration;
 
         if (ratio <= 1.10) return 5;
@@ -120,7 +111,7 @@ public class JourneyScoringService {
     }
 
     private int calculateTransfersScore(int transfers) {
-        if (transfers <= 0) return 5;
+        if (transfers == 0) return 5;
         if (transfers == 1) return 4;
         if (transfers == 2) return 3;
         if (transfers == 3) return 2;
@@ -128,112 +119,194 @@ public class JourneyScoringService {
         return 1;
     }
 
-    private int calculateWaitingScore(
+    private int calculateTransferTimeScore(
             int transfers,
-            int totalWaitingMinutes,
-            int shortestTransfer
+            long totalTransferSeconds,
+            long shortestTransferSeconds
     ) {
-        if (transfers <= 0) return 5;
+        if (transfers == 0) return 5;
 
-        if (shortestTransfer < 3) return 1;
-        if (shortestTransfer <= 5) return 2;
+        if (shortestTransferSeconds < 180) return 1;
+        if (shortestTransferSeconds <= 300) return 2;
 
-        if (totalWaitingMinutes <= 10) return 5;
-        if (totalWaitingMinutes <= 15) return 4;
-        if (totalWaitingMinutes <= 25) return 3;
+        if (totalTransferSeconds <= 600) return 5;
+        if (totalTransferSeconds <= 900) return 4;
+        if (totalTransferSeconds <= 1500) return 3;
 
         return 2;
     }
 
-    private int calculateWalkingScore(int walkingMinutes) {
-        if (walkingMinutes <= 5) return 5;
-        if (walkingMinutes <= 10) return 4;
-        if (walkingMinutes <= 20) return 3;
-        if (walkingMinutes <= 30) return 2;
+    private int calculateWalkingScore(long walkingSeconds) {
+        if (walkingSeconds <= 5 * 60) return 5;
+        if (walkingSeconds <= 10 * 60) return 4;
+        if (walkingSeconds <= 20 * 60) return 3;
+        if (walkingSeconds <= 30 * 60) return 2;
 
         return 1;
     }
 
-    private int calculateWalkingMinutes(JourneyOptionDto journey) {
-        int totalWalkingSeconds = 0;
+    private double calculateOverallScore(
+            int travelTimeScore,
+            int transfersScore,
+            int transferTimeScore,
+            int walkingScore
+    ) {
+        double score =
+                travelTimeScore * JourneyScoreWeight.TRAVEL_TIME.getWeight() / 100.0
+                        + transfersScore * JourneyScoreWeight.NUMBER_OF_TRANSFERS.getWeight() / 100.0
+                        + transferTimeScore * JourneyScoreWeight.TOTAL_TRANSFER_TIME.getWeight() / 100.0
+                        + walkingScore * JourneyScoreWeight.COMFORT.getWeight() / 100.0;
+
+        return Math.round(score * 100.0) / 100.0;
+    }
+
+    private long calculateWalkingSeconds(JourneyOptionDto journey) {
+        long totalSeconds = 0;
 
         for (JourneyLegDto leg : journey.legs()) {
-            if (!"WALK".equalsIgnoreCase(leg.mode())) {
+            if (!isWalking(leg)) {
                 continue;
             }
 
-            OffsetDateTime departure =
-                    OffsetDateTime.parse(leg.departureTime());
+            OffsetDateTime departure = parseTime(leg.departureTime());
+            OffsetDateTime arrival = parseTime(leg.arrivalTime());
 
-            OffsetDateTime arrival =
-                    OffsetDateTime.parse(leg.arrivalTime());
-
-            long seconds = Duration.between(
-                    departure,
-                    arrival
-            ).toSeconds();
+            long seconds = Duration.between(departure, arrival).toSeconds();
 
             if (seconds < 0) {
                 throw new IllegalArgumentException(
-                        "Invalid walking leg times."
+                        "Walking leg has an invalid time interval."
                 );
             }
 
-            totalWalkingSeconds += (int) seconds;
+            totalSeconds += seconds;
         }
 
-        return (int) Math.ceil(totalWalkingSeconds / 60.0);
+        return totalSeconds;
     }
 
-    private List<JourneyLegDto> getTransitLegs(JourneyOptionDto journey) {
-        return journey.legs().stream()
-                .filter(leg -> !"WALK".equalsIgnoreCase(leg.mode()))
+    private long calculateTotalTransferSeconds(JourneyOptionDto journey) {
+        return calculateTransferTimes(journey).stream()
+                .mapToLong(Long::longValue)
+                .sum();
+    }
+
+    private long calculateShortestTransferSeconds(JourneyOptionDto journey) {
+        return calculateTransferTimes(journey).stream()
+                .mapToLong(Long::longValue)
+                .min()
+                .orElse(0);
+    }
+
+    private List<Long> calculateTransferTimes(JourneyOptionDto journey) {
+        List<JourneyLegDto> transitLegs = journey.legs().stream()
+                .filter(leg -> !isWalking(leg))
                 .toList();
-    }
 
-    private List<Integer> calculateTransferTimes(
-            JourneyOptionDto journey
-    ) {
-        List<JourneyLegDto> transitLegs = getTransitLegs(journey);
-        List<Integer> transferTimes = new ArrayList<>();
+        List<Long> transferTimes = new ArrayList<>();
 
-        for (int i = 0; i < journey.numberOfTransfers(); i++) {
-            OffsetDateTime arrival = OffsetDateTime.parse(
+        for (int i = 0; i < transitLegs.size() - 1; i++) {
+            OffsetDateTime arrival = parseTime(
                     transitLegs.get(i).arrivalTime()
             );
 
-            OffsetDateTime departure = OffsetDateTime.parse(
+            OffsetDateTime departure = parseTime(
                     transitLegs.get(i + 1).departureTime()
             );
 
-            long minutes = Duration.between(
-                    arrival,
-                    departure
-            ).toMinutes();
+            long seconds = Duration.between(arrival, departure).toSeconds();
 
-            if (minutes < 0) {
+            if (seconds < 0) {
                 throw new IllegalArgumentException(
-                        "Invalid journey transfer times."
+                        "Invalid transfer times between transit legs."
                 );
             }
 
-            transferTimes.add((int) minutes);
+            transferTimes.add(seconds);
         }
 
         return transferTimes;
     }
 
-    private int calculateWaitingMinutes(JourneyOptionDto journey) {
-        return calculateTransferTimes(journey).stream()
-                .mapToInt(Integer::intValue)
-                .sum();
+    private boolean isWalking(JourneyLegDto leg) {
+        return "WALK".equalsIgnoreCase(leg.mode());
     }
 
-    private int calculateShortestTransfer(JourneyOptionDto journey) {
-        return calculateTransferTimes(journey).stream()
-                .mapToInt(Integer::intValue)
-                .min()
-                .orElse(0);
+    private OffsetDateTime parseTime(String value) {
+        try {
+            return OffsetDateTime.parse(value);
+        } catch (DateTimeParseException | NullPointerException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid journey leg date/time: " + value,
+                    exception
+            );
+        }
+    }
+
+    private String formatDuration(long seconds) {
+        long minutes = seconds / 60;
+        long remainingSeconds = seconds % 60;
+
+        if (minutes == 0) {
+            return remainingSeconds + " s";
+        }
+
+        if (remainingSeconds == 0) {
+            return minutes + " min";
+        }
+
+        return minutes + " min " + remainingSeconds + " s";
+    }
+
+    private void validateJourneys(List<JourneyOptionDto> journeys) {
+        if (journeys == null || journeys.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Journey list cannot be null or empty."
+            );
+        }
+
+        for (JourneyOptionDto journey : journeys) {
+            if (journey == null) {
+                throw new IllegalArgumentException(
+                        "Journey cannot be null."
+                );
+            }
+
+            if (journey.durationSeconds() <= 0) {
+                throw new IllegalArgumentException(
+                        "Journey duration must be greater than zero."
+                );
+            }
+
+            if (journey.numberOfTransfers() < 0) {
+                throw new IllegalArgumentException(
+                        "Number of transfers cannot be negative."
+                );
+            }
+
+            if (journey.legs() == null || journey.legs().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Journey must contain at least one leg."
+                );
+            }
+
+            for (JourneyLegDto leg : journey.legs()) {
+                if (leg == null || leg.mode() == null || leg.mode().isBlank()) {
+                    throw new IllegalArgumentException(
+                            "Journey leg and its mode cannot be null or empty."
+                    );
+                }
+
+                OffsetDateTime departure = parseTime(leg.departureTime());
+                OffsetDateTime arrival = parseTime(leg.arrivalTime());
+
+                if (arrival.isBefore(departure)) {
+                    throw new IllegalArgumentException(
+                            "Journey leg arrival cannot be before departure."
+                    );
+                }
+            }
+        }
     }
 
 }

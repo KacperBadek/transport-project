@@ -16,14 +16,8 @@ public class JourneyController {
 
     private final JourneyService journeyService;
 
-    @GetMapping("/api/journey/search")
+    @PostMapping("/api/journey/search")
     public ResponseEntity<List<JourneyOptionDto>> searchJourney(@Valid @RequestBody JourneySearchRequest request) {
         return ResponseEntity.ok(journeyService.searchJourneys(request));
     }
-
-    @GetMapping("/api/journey/{id}")
-    public ResponseEntity<JourneyOptionDto> getJourneyDetails(@PathVariable Long id) {
-        return null;
-    }
-
 }
