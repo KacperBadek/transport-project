@@ -77,6 +77,7 @@ Przed uruchomieniem projektu należy zainstalować:
 - Maven (jeżeli projekt nie korzysta z dołączonego Maven Wrappera).
 - Docker Desktop.
 - Node.js i npm – do uruchomienia frontendu.
+- plik pomorskie-261108.osm.pbf (przez jego wielkość nie mogę dodać go do repo) należy go pobrać z https://download.geofabrik.de/europe/poland/pomorskie-latest.osm.pbf
 
 Wymagane są również przygotowane dane (gtfsgoogle.zip i pomorskie-261108.osm.pbf) i graf OpenTripPlanner. Graf sam się wygeneruje za pomocą tych dwóch plików.
 
@@ -87,6 +88,8 @@ Projekt składa się z backendu, frontendu oraz usług zewnętrznych.
 ### Krok 1. Uruchomienie usług zewnętrznych
 
 OpenTripPlanner i Ollama mogą działać w kontenerach Docker.
+
+Upewnij się że pliki gtfsgoogle.zip i pomorskie-261108.osm.pbf znajdują się w folderze otp/data/gdansk inaczej graph.obj nie będzie mógł się wygenerować.
 
 Uruchom Docker Desktop, a następnie z katalogu zawierającego odpowiedni plik `docker-compose.yml` wykonaj:
 
