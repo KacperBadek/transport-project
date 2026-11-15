@@ -1,7 +1,7 @@
 services:
   otp-build:
     image: opentripplanner/opentripplanner:2.11.0_2026-11-10T10-16
-    container_name: transitflow-otp-build
+    container_name: transitfinder-otp-build
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx4G"
     volumes:
@@ -11,7 +11,7 @@ services:
 
   otp:
     image: opentripplanner/opentripplanner:2.11.0_2026-11-10T10-16
-    container_name: transitflow-otp
+    container_name: transitfinder-otp
     ports:
       - "8081:8080"
     volumes:
@@ -24,7 +24,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.40.16
-    container_name: transitflow-ollama
+    container_name: transitfinder-ollama
     ports:
       - "11434:11434"
     volumes:
@@ -39,7 +39,7 @@ services:
 
   ollama-init:
     image: ollama/ollama:0.40.16
-    container_name: transitflow-ollama-init
+    container_name: transitfinder-ollama-init
     depends_on:
       ollama:
         condition: service_healthy
