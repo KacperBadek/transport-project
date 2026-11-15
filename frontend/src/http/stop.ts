@@ -1,0 +1,22 @@
+import api from "./axios";
+import type StopDto from "../model/interfaces/StopDto";
+
+export async function searchStops(
+    query: string
+): Promise<StopDto[]> {
+    return (
+        await api.get<StopDto[]>("/api/stop/search", {
+            params: {query},
+        })
+    ).data;
+}
+
+// export const searchStops = async (
+//     query: string
+// ): Promise<StopDto[]> => {
+//     const response = await api.get<StopDto[]>("/api/stop/search", {
+//         params: {query},
+//     });
+//
+//     return response.data;
+// };
