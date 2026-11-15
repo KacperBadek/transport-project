@@ -8,7 +8,7 @@ import JourneyResults from "../components/FoundRoutesPanel/JourneyResults.tsx";
 
 import {searchJourneys} from "../http/journey.ts";
 
-import type JourneySearchRequest from "../model/interfaces/JourneySearchRequest";
+import type JourneySearchRequest from "../model/interfaces/journeySearchRequest.ts";
 
 export default function HomePage() {
 

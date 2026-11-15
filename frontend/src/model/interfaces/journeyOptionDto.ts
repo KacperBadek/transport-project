@@ -1,4 +1,4 @@
-import type JourneyLegDto from "./JourneyLegDto";
+import type JourneyLegDto from "./journeyLegDto.ts";
 
 export default interface JourneyOptionDto {
     departureTime: string;

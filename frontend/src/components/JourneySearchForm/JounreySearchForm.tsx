@@ -1,7 +1,7 @@
 import {useState} from "react";
 import StopAutocomplete from "./StopAutoComplete.tsx";
-import type StopDto from "../../model/interfaces/StopDto.ts";
-import type JourneySearchRequest from "../../model/interfaces/JourneySearchRequest.ts";
+import type StopDto from "../../model/interfaces/stopDto.ts";
+import type JourneySearchRequest from "../../model/interfaces/journeySearchRequest.ts";
 import DateTimePicker from "./DateTimePricker.tsx";
 
 interface JourneySearchFormProps {

@@ -1,4 +1,4 @@
-import type JourneyOptionDto from "../../model/interfaces/JourneyOptionDto.ts";
+import type JourneyOptionDto from "../../model/interfaces/journeyOptionDto.ts";
 import JourneyCard from "./JourneyCard.tsx";
 
 interface JourneyResultsProps {

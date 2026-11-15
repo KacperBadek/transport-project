@@ -1,6 +1,6 @@
 import api from "./axios";
-import type JourneyOptionDto from "../model/interfaces/JourneyOptionDto";
-import type JourneySearchRequest from "../model/interfaces/JourneySearchRequest";
+import type JourneyOptionDto from "../model/interfaces/journeyOptionDto.ts";
+import type JourneySearchRequest from "../model/interfaces/journeySearchRequest.ts";
 
 export async function searchJourneys(
     request: JourneySearchRequest

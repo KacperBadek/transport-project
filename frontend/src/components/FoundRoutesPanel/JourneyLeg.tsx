@@ -1,4 +1,4 @@
-import type JourneyOptionDto from "../../model/interfaces/JourneyOptionDto.ts";
+import type JourneyOptionDto from "../../model/interfaces/journeyOptionDto.ts";
 import getTransportIcon from "../../utils/getTransportIcon.tsx";
 import getTransportName from "../../utils/getTransportName.ts";
 import formatTime from "../../utils/formatTime.ts";

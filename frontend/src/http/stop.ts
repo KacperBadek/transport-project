@@ -1,5 +1,5 @@
 import api from "./axios";
-import type StopDto from "../model/interfaces/StopDto";
+import type StopDto from "../model/interfaces/stopDto.ts";
 
 export async function searchStops(
     query: string

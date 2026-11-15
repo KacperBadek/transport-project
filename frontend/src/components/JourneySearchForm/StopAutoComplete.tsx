@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 import {searchStops} from "../../http/stop.ts";
-import type StopDto from "../../model/interfaces/StopDto.ts";
+import type StopDto from "../../model/interfaces/stopDto.ts";
 import AutocompleteOption from "./AutoCompleteOption.tsx";
 import AutoCompleteInfo from "./AutoCompleteInfo.tsx";
 

@@ -1,5 +1,5 @@
 import JourneySearchForm from "./JourneySearchForm/JounreySearchForm.tsx";
-import type JourneySearchRequest from "../model/interfaces/JourneySearchRequest";
+import type JourneySearchRequest from "../model/interfaces/journeySearchRequest.ts";
 
 interface MainContentProps {
     onSearch: (request: JourneySearchRequest) => void;
