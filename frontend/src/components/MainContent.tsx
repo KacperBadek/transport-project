@@ -12,8 +12,9 @@ export default function MainContent({onSearch, isLoading}: MainContentProps) {
 
             <div className="mb-10 text-center">
                 <h1 className="text-4xl font-bold tracking-tight text-white md:text-5xl">
-                    I fucking love
-                    <span className="text-blue-500"> public transport</span>
+                    Where to
+                    <span className="text-blue-500"> today</span>
+                    ?
                 </h1>
 
                 <p className="mx-auto mt-4 max-w-xl text-slate-400">

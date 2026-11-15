@@ -10,13 +10,3 @@ export async function searchStops(
         })
     ).data;
 }
-
-// export const searchStops = async (
-//     query: string
-// ): Promise<StopDto[]> => {
-//     const response = await api.get<StopDto[]>("/api/stop/search", {
-//         params: {query},
-//     });
-//
-//     return response.data;
-// };

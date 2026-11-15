@@ -9,6 +9,8 @@ import JourneyResults from "../components/FoundRoutesPanel/JourneyResults.tsx";
 import {searchJourneys} from "../http/journey.ts";
 
 import type JourneySearchRequest from "../model/interfaces/journeySearchRequest.ts";
+import {analyzeJourneys} from "../http/aiAgent.ts";
+import JourneyAnalysis from "../components/AiAgentPanel/JourneyAnalysis.tsx";
 
 export default function HomePage() {
 
@@ -17,8 +19,21 @@ export default function HomePage() {
             searchJourneys(request),
     });
 
+    const analysisMutation = useMutation({
+        mutationFn: analyzeJourneys,
+    });
+
     const handleSearch = (request: JourneySearchRequest) => {
+        analysisMutation.reset();
         journeyMutation.mutate(request);
+    };
+
+    const handleAnalysis = () => {
+        if (!journeyMutation.data || journeyMutation.data.length === 0 || analysisMutation.data) {
+            return;
+        }
+
+        analysisMutation.mutate(journeyMutation.data);
     };
 
     return (
@@ -42,9 +57,20 @@ export default function HomePage() {
                 )}
 
                 {journeyMutation.isSuccess && (
-                    <JourneyResults
-                        journeys={journeyMutation.data}
-                    />
+                    <>
+                        {journeyMutation.data.length > 0 && (
+                            <JourneyAnalysis
+                                onAnalyze={handleAnalysis}
+                                isLoading={analysisMutation.isPending}
+                                analysis={analysisMutation.data}
+                                isError={analysisMutation.isError}
+                            />
+                        )}
+
+                        <JourneyResults
+                            journeys={journeyMutation.data}
+                        />
+                    </>
                 )}
             </div>
 

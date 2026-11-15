@@ -12,15 +12,3 @@ export async function searchJourneys(
         )
     ).data
 }
-
-
-// export const searchJourneys = async (
-//     request: JourneySearchRequest
-// ): Promise<JourneyOptionDto[]> => {
-//     const response = await api.post<JourneyOptionDto[]>(
-//         "/api/journey/search",
-//         request
-//     );
-//
-//     return response.data;
-// };
